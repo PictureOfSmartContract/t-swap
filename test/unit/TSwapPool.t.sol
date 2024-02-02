@@ -11,6 +11,8 @@ contract TSwapPoolTest is Test {
     ERC20Mock poolToken;
     ERC20Mock weth;
 
+    uint256 private constant POOLTOKEN_TO_GET = 2e18;
+
     address liquidityProvider = makeAddr("liquidityProvider");
     address user = makeAddr("user");
 
@@ -90,5 +92,35 @@ contract TSwapPoolTest is Test {
         pool.withdraw(100e18, 90e18, 100e18, uint64(block.timestamp));
         assertEq(pool.totalSupply(), 0);
         assert(weth.balanceOf(liquidityProvider) + poolToken.balanceOf(liquidityProvider) > 400e18);
+    }
+
+    function testGetInputAmountBasedOnOutput() public {
+        vm.startPrank(liquidityProvider);
+        weth.approve(address(pool), 100e18);
+        poolToken.approve(address(pool), 100e18);
+        pool.deposit(100e18, 100e18, 100e18, uint64(block.timestamp));
+        vm.stopPrank();
+
+        uint256 inputReserves = weth.balanceOf(address(pool));
+        uint256 outputReserves = poolToken.balanceOf(address(pool));
+        vm.startPrank(user);
+
+        uint256 amountOfInputBasedOfTheOutPut =
+            pool.getInputAmountBasedOnOutput(POOLTOKEN_TO_GET, inputReserves, outputReserves);
+
+        uint256 amountOfOutputBasedOnInput =
+            pool.getOutputAmountBasedOnInput(amountOfInputBasedOfTheOutPut, inputReserves, outputReserves);
+        vm.stopPrank();
+
+       
+
+        console.log("Amount of weth spend:", POOLTOKEN_TO_GET);
+        console.log("Amount of input they get based on the output", amountOfInputBasedOfTheOutPut);
+        console.log("Amount of output they get based on the input:", amountOfOutputBasedOnInput);
+
+        //Amount of input they get based on the output 20469571981249872065
+        //Amount of output they get based on the input: 16949152542372881355
+        
+
     }
 }
